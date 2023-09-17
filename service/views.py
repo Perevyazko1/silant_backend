@@ -322,6 +322,7 @@ def get_complaints(request):
     result = {}
     for complaint in complaints:
         if complaint.machine.service_company == request.user or complaint.machine.client == request.user or request.user.role == 'manager':
+            print(RecoveryMethodReference.objects.all().values('name'))
             result = {
                     'id': complaint.id,
                     'date_of_refusal': complaint.date_of_refusal.strftime("%d.%m.%Y"),
