@@ -136,8 +136,8 @@ def post_machine_data(request):
 def post_maintenance_data(request):
     if not request.user.is_authenticated:
         return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа'})
-    if request.user.role != 'manager':
-        return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа'})
+    # if maintenance.machine.service_company == request.user or maintenance.machine.client == request.user or request.user.role == 'manager':
+    #     return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа'})
     try:
         type_of_maintenance = TypeOfMaintenanceReference.objects.get_or_create(name=request.data['type_of_maintenance'])[0]
         date_of_maintenance = datetime.datetime.strptime(request.data['date_of_maintenance'], "%d.%m.%Y")
@@ -172,8 +172,8 @@ def post_maintenance_data(request):
 def post_complaints_data(request):
     if not request.user.is_authenticated:
         return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа'})
-    if request.user.role != 'manager':
-        return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа'})
+    # if request.user.role != 'manager':
+    #     return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа'})
     try:
         date_of_refusal = datetime.datetime.strptime(request.data['date_of_refusal'], "%d.%m.%Y")
         operating_time = request.data['operating_time']
