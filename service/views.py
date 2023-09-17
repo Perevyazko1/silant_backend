@@ -328,7 +328,7 @@ def get_complaints(request):
                     'operating_time': complaint.operating_time,
                     'failure_node': complaint.failure_node.name,
                     'failure_description': complaint.failure_description,
-                    'recovery_method': complaint.failure_description,
+                    'recovery_method': complaint.recovery_method.name,
                     'parts_used': complaint.parts_used,
                     'date_of_restoration': complaint.date_of_restoration.strftime("%d.%m.%Y"),
                     'equipment_downtime': complaint.equipment_downtime,
