@@ -241,8 +241,9 @@ def get_machine_list(request):
         machine_list = machine_list.filter(controlled_bridge_model__name=controlled_bridge_model)
 
     data = {
-        'machine_list_data': machine_list.values(
+        'machine_list_data': machine_list.order_by('-date_of_shipment').values(
             'id',
+            'date_of_shipment',
             'factory_number',
             'machine_model__name',
             'engine_model__name',
@@ -277,13 +278,16 @@ def get_maintenance(request):
     for maintenance in maintenances:
         if maintenance.machine.service_company == request.user or maintenance.machine.client == request.user or request.user.role == 'manager':
             result = {
-                'id': maintenance.id,
-                'type_of_maintenance': maintenance.type_of_maintenance.name,
-                'date_of_maintenance': maintenance.date_of_maintenance.strftime("%d.%m.%Y"),
-                'operating_time': maintenance.operating_time,
-                'order_number': maintenance.order_number,
-                'order_date': maintenance.order_date.strftime("%d.%m.%Y"),
-                'machine': maintenance.machine.factory_number,
+                'maintenance_data':maintenances.order_by('-date_of_maintenance').values('id','type_of_maintenance__name','date_of_maintenance','operating_time','order_number',"order_date","machine_id__factory_number"),
+                #     {
+                #     'id': maintenances.values('id'),
+                #     'type_of_maintenance': maintenances.values('type_of_maintenance'),
+                #     'date_of_maintenance': maintenances.values('date_of_maintenance'),
+                #     'operating_time': maintenance.operating_time,
+                #     'order_number': maintenance.order_number,
+                #     'order_date': maintenance.order_date.strftime("%d.%m.%Y"),
+                #     'machine': maintenance.machine.factory_number,
+                # },
                 'select_data':{
                     'machine': Machine.objects.all().values('factory_number'),
                     'type_maintenance': TypeOfMaintenanceReference.objects.all().values('name')
@@ -322,18 +326,19 @@ def get_complaints(request):
     result = {}
     for complaint in complaints:
         if complaint.machine.service_company == request.user or complaint.machine.client == request.user or request.user.role == 'manager':
-            print(RecoveryMethodReference.objects.all().values('name'))
+
             result = {
-                    'id': complaint.id,
-                    'date_of_refusal': complaint.date_of_refusal.strftime("%d.%m.%Y"),
-                    'operating_time': complaint.operating_time,
-                    'failure_node': complaint.failure_node.name,
-                    'failure_description': complaint.failure_description,
-                    'recovery_method': complaint.recovery_method.name,
-                    'parts_used': complaint.parts_used,
-                    'date_of_restoration': complaint.date_of_restoration.strftime("%d.%m.%Y"),
-                    'equipment_downtime': complaint.equipment_downtime,
-                    'machine': complaint.machine.factory_number,
+                    "complaints_data":complaints.order_by('-date_of_refusal').values('id','date_of_refusal','operating_time','failure_node_id__name','failure_description','recovery_method_id__name','parts_used','date_of_restoration','equipment_downtime','machine_id__factory_number'),
+                    # 'id': complaint.id,
+                    # 'date_of_refusal': complaint.date_of_refusal.strftime("%d.%m.%Y"),
+                    # 'operating_time': complaint.operating_time,
+                    # 'failure_node': complaint.failure_node.name,
+                    # 'failure_description': complaint.failure_description,
+                    # 'recovery_method': complaint.recovery_method.name,
+                    # 'parts_used': complaint.parts_used,
+                    # 'date_of_restoration': complaint.date_of_restoration.strftime("%d.%m.%Y"),
+                    # 'equipment_downtime': complaint.equipment_downtime,
+                    # 'machine': complaint.machine.factory_number,
                     'select_data':{
                         'machine': Machine.objects.all().values('factory_number'),
                         'failure_node': FailureNodeReference.objects.all().values('name'),
