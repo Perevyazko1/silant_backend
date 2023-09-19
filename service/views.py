@@ -266,6 +266,42 @@ def get_machine_list(request):
 
 
 @api_view(['GET'])
+def get_maintenance_unit(request):
+    if not request.user.is_authenticated:
+        return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа'})
+    maintenance_id = request.GET['maintenance_id']
+    maintenance = Maintenance.objects.filter(id=maintenance_id)
+    result = []
+    for maintenance_unit in maintenance:
+        if maintenance_unit.machine.service_company == request.user or maintenance_unit.machine.client == request.user or request.user.role == 'manager':
+            result = {
+                    'id': maintenance_unit.id,
+                    'type_of_maintenance': maintenance_unit.type_of_maintenance.name,
+                    'date_of_maintenance': maintenance_unit.date_of_maintenance,
+                    'operating_time': maintenance_unit.operating_time,
+                    'order_number': maintenance_unit.order_number,
+                    'order_date': maintenance_unit.order_date.strftime("%d.%m.%Y"),
+                    'machine': maintenance_unit.machine.factory_number,
+                }
+
+        else:
+            result = {
+                'id': "Данные Вам недоступны",
+                'type_of_maintenance': "Данные Вам недоступны",
+                'date_of_maintenance': "Данные Вам недоступны",
+                'operating_time': "Данные Вам недоступны",
+                'order_number': "Данные Вам недоступны",
+                'order_date': "Данные Вам недоступны",
+                'machine': "Данные Вам недоступны",
+
+            }
+            print(result)
+
+    return Response(status=status.HTTP_200_OK, data=result)
+
+
+
+@api_view(['GET'])
 def get_maintenance(request):
     if not request.user.is_authenticated:
         return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа'})
