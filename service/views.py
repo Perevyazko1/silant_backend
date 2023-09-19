@@ -352,6 +352,45 @@ def get_maintenance(request):
 
 
 @api_view(['GET'])
+def get_complaints_unit(request):
+    if not request.user.is_authenticated:
+        return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа'})
+    complaint_id = request.GET['complaint_id']
+    complaint = Complaint.objects.filter(id=complaint_id)
+    result = []
+    for complaint_unit in complaint:
+        if complaint_unit.machine.service_company == request.user or complaint_unit.machine.client == request.user or request.user.role == 'manager':
+            result = {
+                    'id': complaint_unit.id,
+                    'date_of_refusal': complaint_unit.date_of_refusal.strftime("%d.%m.%Y"),
+                    'operating_time': complaint_unit.operating_time,
+                    'failure_node': complaint_unit.failure_node.name,
+                    'failure_description': complaint_unit.failure_description,
+                    'recovery_method': complaint_unit.recovery_method.name,
+                    'parts_used': complaint_unit.parts_used,
+                    'date_of_restoration': complaint_unit.date_of_restoration.strftime("%d.%m.%Y"),
+                    'equipment_downtime': complaint_unit.equipment_downtime,
+                    'machine': complaint_unit.machine.factory_number,
+                }
+
+        else:
+            result = {
+                'id': "Данные Вам недоступны",
+                'type_of_maintenance': "Данные Вам недоступны",
+                'date_of_maintenance': "Данные Вам недоступны",
+                'operating_time': "Данные Вам недоступны",
+                'order_number': "Данные Вам недоступны",
+                'order_date': "Данные Вам недоступны",
+                'machine': "Данные Вам недоступны",
+
+            }
+            print(result)
+
+    return Response(status=status.HTTP_200_OK, data=result)
+
+
+
+@api_view(['GET'])
 def get_complaints(request):
     if not request.user.is_authenticated:
         return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа'})
