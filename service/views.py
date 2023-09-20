@@ -167,7 +167,7 @@ def post_maintenance_data(request):
         result = f'Успешно обновлены данные ТО {order_number}!'
     return Response(status=status.HTTP_200_OK, data={'result': result})
 
-
+# TODO настроить по id
 @api_view(['POST'])
 def post_complaints_data(request):
     if not request.user.is_authenticated:
@@ -197,6 +197,7 @@ def post_complaints_data(request):
                 'date_of_restoration': date_of_restoration,
                 'equipment_downtime': equipment_downtime,
                 'machine': machine})
+        print(maintenance)
     except Exception as e:
         print(e)
         result = f'Ошибка обновления данных рекламации, перепроверьте данные!'
@@ -249,7 +250,12 @@ def get_machine_list(request):
             'engine_model__name',
             'transmission_model__name',
             'driving_bridge_model__name',
-            'controlled_bridge_model__name'
+            'controlled_bridge_model__name',
+            'engine_number',
+            'transmission_number',
+            'driving_bridge_number',
+            'controlled_bridge_number'
+
         ),
         'filter_data': {
             'machine_models': MachineModelReference.objects.all().values('name'),
@@ -277,7 +283,7 @@ def get_maintenance_unit(request):
             result = {
                     'id': maintenance_unit.id,
                     'type_of_maintenance': maintenance_unit.type_of_maintenance.name,
-                    'date_of_maintenance': maintenance_unit.date_of_maintenance,
+                    'date_of_maintenance': maintenance_unit.date_of_maintenance.strftime("%d.%m.%Y"),
                     'operating_time': maintenance_unit.operating_time,
                     'order_number': maintenance_unit.order_number,
                     'order_date': maintenance_unit.order_date.strftime("%d.%m.%Y"),
@@ -295,7 +301,6 @@ def get_maintenance_unit(request):
                 'machine': "Данные Вам недоступны",
 
             }
-            print(result)
 
     return Response(status=status.HTTP_200_OK, data=result)
 
