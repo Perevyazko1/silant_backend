@@ -313,13 +313,46 @@ def get_maintenance(request):
     # print(request.user.username)
     # if request.user.role != 'service_organisation' and request.user.role != 'manager':
     #     return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа роли'})
-    factory_number = request.GET['factory_number']
-    maintenances = Maintenance.objects.filter(machine__factory_number=factory_number)
+    # factory_number = request.GET['factory_number']
+    type_of_maintenance = request.GET['type_of_maintenance']
+    service_company = request.GET['service_company']
+    machine = request.GET['machine']
+    maintenances = Maintenance.objects.none()
+    # maintenances_filter = Maintenance.objects.none()
+    if request.user.role == 'client':
+        print('client')
+        maintenances = Maintenance.objects.filter(machine__client__username=request.user)
+    if request.user.role == 'service_company':
+        maintenances = Maintenance.objects.filter(machine__service_company__username=request.user)
+        print('service_company')
+    if request.user.role == 'manager':
+        print(request.user)
+        maintenances = Maintenance.objects.all()
+    maintenances_filter = maintenances
+    if type_of_maintenance != "Все модели":
+        maintenances_filter = maintenances.filter(type_of_maintenance__name=type_of_maintenance)
+
+    if service_company != "Все модели":
+        maintenances_filter = maintenances.filter(machine__service_company__first_name=service_company)
+
+    if machine != "Все модели":
+        maintenances_filter = maintenances.filter(machine__factory_number=machine)
+    print(maintenances)
+    # print(maintenances_filter)
+
     result = []
     for maintenance in maintenances:
         if maintenance.machine.service_company == request.user or maintenance.machine.client == request.user or request.user.role == 'manager':
             result = {
-                'maintenance_data':maintenances.order_by('-date_of_maintenance').values('id','type_of_maintenance__name','date_of_maintenance','operating_time','order_number',"order_date","machine_id__factory_number"),
+                'maintenance_data':maintenances_filter.order_by('-date_of_maintenance').values(
+                    'id',
+                    'type_of_maintenance__name',
+                    'date_of_maintenance',
+                    'operating_time',
+                    'order_number',
+                    "order_date",
+                    "machine_id__factory_number"
+                ),
                 #     {
                 #     'id': maintenances.values('id'),
                 #     'type_of_maintenance': maintenances.values('type_of_maintenance'),
@@ -333,6 +366,11 @@ def get_maintenance(request):
                     'machine': Machine.objects.all().values('factory_number'),
                     'type_maintenance': TypeOfMaintenanceReference.objects.all().values('name')
 
+                },
+                'filter_data':{
+                    'type_of_maintenance': TypeOfMaintenanceReference.objects.all().values('name'),
+                    'service_company': CustomUser.objects.filter(role="service_organisation").values('first_name'),
+                    'machine': maintenances.values('machine__factory_number').distinct()
                 }
             }
 
