@@ -368,9 +368,9 @@ def get_maintenance(request):
 
                 },
                 'filter_data':{
-                    'type_of_maintenance': maintenances_filter.values('type_of_maintenance__name').distinct(),
-                    'service_company': maintenances_filter.values('machine__service_company__first_name').distinct(),
-                    'machine': maintenances_filter.values('machine__factory_number').distinct()
+                    'type_of_maintenance': maintenances.values('type_of_maintenance__name').distinct(),
+                    'service_company': maintenances.values('machine__service_company__first_name').distinct(),
+                    'machine': maintenances.values('machine__factory_number').distinct()
                 }
             }
 
@@ -488,9 +488,9 @@ def get_complaints(request):
                         'recovery_method': RecoveryMethodReference.objects.all().values('name')
                     },
                 'filter_data':{
-                    'failure_node': complaints_filter.values('failure_node__name').distinct(),
-                    'recovery_method': complaints_filter.values('recovery_method__name').distinct(),
-                    'service_company': complaints_filter.values('machine__service_company__first_name').distinct()
+                    'failure_node': complaints.values('failure_node__name').distinct(),
+                    'recovery_method': complaints.values('recovery_method__name').distinct(),
+                    'service_company': complaints.values('machine__service_company__first_name').distinct()
                 }
 
             }
