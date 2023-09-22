@@ -210,7 +210,8 @@ def post_complaints_data(request):
 def get_machine_list(request):
     if not request.user.is_authenticated:
         return Response(status=status.HTTP_200_OK, data={'result': 'ошибка доступа'})
-    factory_number_filer = request.GET['factory_number']
+    # factory_number_filer = request.GET['factory_number']
+    # print(f'номер {factory_number_filer}')
     machine_model_filer = request.GET['machine_model']
     engine_model_filer = request.GET['engine_model']
     transmission_model_filer = request.GET['transmission_model']
@@ -219,13 +220,11 @@ def get_machine_list(request):
     machine_list = Machine.objects.none()
     if request.user.role == 'client':
         machine_list = Machine.objects.filter(client__username=request.user)
-    if request.user.role == 'service_company':
+    if request.user.role == 'service_organisation':
         machine_list = Machine.objects.filter(service_company__username=request.user)
     if request.user.role == 'manager':
         machine_list = Machine.objects.all()
     machine_list_filter = machine_list
-    if factory_number_filer != "":
-        machine_list_filter = machine_list.filter(factory_number__contains=factory_number_filer)
 
     if machine_model_filer != "Все модели":
         machine_list_filter = machine_list.filter(machine_model__name=machine_model_filer)
@@ -259,11 +258,11 @@ def get_machine_list(request):
 
         ),
         'filter_data': {
-            'machine_models': MachineModelReference.objects.all().values('name'),
-            'engine_models': EngineModelReference.objects.all().values('name'),
-            'transmission_models': TransmissionModelReference.objects.all().values('name'),
-            'driving_bridge_models': DrivingBridgeModelReference.objects.all().values('name'),
-            'controlled_bridge_models': ControlledBridgeModelReference.objects.all().values('name'),
+            'machine_models': machine_list.values('machine_model__name'),
+            'engine_models': machine_list.values('engine_model__name'),
+            'transmission_models': machine_list.values('transmission_model__name'),
+            'driving_bridge_models': machine_list.values('driving_bridge_model__name'),
+            'controlled_bridge_models': machine_list.values('controlled_bridge_model__name'),
         },
         'users_data': CustomUser.objects.filter(role="client").values('first_name'),
         'services_data': CustomUser.objects.filter(role="service_organisation").values('first_name'),
@@ -316,7 +315,7 @@ def get_maintenance(request):
     maintenances = Maintenance.objects.none()
     if request.user.role == 'client':
         maintenances = Maintenance.objects.filter(machine__client__username=request.user)
-    if request.user.role == 'service_company':
+    if request.user.role == 'service_organisation':
         maintenances = Maintenance.objects.filter(machine__service_company__username=request.user)
     if request.user.role == 'manager':
         maintenances = Maintenance.objects.all()
@@ -424,7 +423,7 @@ def get_complaints(request):
 
     if request.user.role == 'client':
         complaints = Complaint.objects.filter(machine__client__username=request.user)
-    if request.user.role == 'service_company':
+    if request.user.role == 'service_organisation':
         complaints = Complaint.objects.filter(machine__service_company__username=request.user)
     if request.user.role == 'manager':
         complaints = Complaint.objects.all()
