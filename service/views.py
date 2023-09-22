@@ -1,13 +1,13 @@
 import datetime
 
-from rest_framework import viewsets, status
+from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from users.models import CustomUser
 from .models import Machine, Maintenance, Complaint, MachineModelReference, EngineModelReference, \
-    TransmissionModelReference, DrivingBridgeModelReference, ControlledBridgeModelReference,TypeOfMaintenanceReference,\
-    RecoveryMethodReference,FailureNodeReference
+    TransmissionModelReference, DrivingBridgeModelReference, ControlledBridgeModelReference, TypeOfMaintenanceReference, \
+    RecoveryMethodReference, FailureNodeReference
 
 
 @api_view(['GET'])
@@ -86,10 +86,10 @@ def post_machine_data(request):
             0]
         transmission_number = request.data['transmission_number']
         driving_bridge_model = \
-        DrivingBridgeModelReference.objects.get_or_create(name=request.data['driving_bridge_model'])[0]
+            DrivingBridgeModelReference.objects.get_or_create(name=request.data['driving_bridge_model'])[0]
         driving_bridge_number = request.data['driving_bridge_number']
         controlled_bridge_model = \
-        ControlledBridgeModelReference.objects.get_or_create(name=request.data['controlled_bridge_model'])[0]
+            ControlledBridgeModelReference.objects.get_or_create(name=request.data['controlled_bridge_model'])[0]
         controlled_bridge_number = request.data['controlled_bridge_number']
         delivery_contract = request.data['delivery_contract']
         date_of_shipment = datetime.datetime.strptime(request.data['date_of_shipment'], "%d.%m.%Y")
@@ -136,10 +136,9 @@ def post_machine_data(request):
 def post_maintenance_data(request):
     if not request.user.is_authenticated:
         return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа'})
-    # if maintenance.machine.service_company == request.user or maintenance.machine.client == request.user or request.user.role == 'manager':
-    #     return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа'})
     try:
-        type_of_maintenance = TypeOfMaintenanceReference.objects.get_or_create(name=request.data['type_of_maintenance'])[0]
+        type_of_maintenance = \
+        TypeOfMaintenanceReference.objects.get_or_create(name=request.data['type_of_maintenance'])[0]
         date_of_maintenance = datetime.datetime.strptime(request.data['date_of_maintenance'], "%d.%m.%Y")
         operating_time = request.data['operating_time']
         order_number = request.data['order_number']
@@ -167,13 +166,12 @@ def post_maintenance_data(request):
         result = f'Успешно обновлены данные ТО {order_number}!'
     return Response(status=status.HTTP_200_OK, data={'result': result})
 
+
 # TODO настроить по id
 @api_view(['POST'])
 def post_complaints_data(request):
     if not request.user.is_authenticated:
         return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа'})
-    # if request.user.role != 'manager':
-    #     return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа'})
     try:
         date_of_refusal = datetime.datetime.strptime(request.data['date_of_refusal'], "%d.%m.%Y")
         operating_time = request.data['operating_time']
@@ -184,7 +182,6 @@ def post_complaints_data(request):
         date_of_restoration = datetime.datetime.strptime(request.data['date_of_restoration'], "%d.%m.%Y")
         equipment_downtime = request.data['equipment_downtime']
         machine = Machine.objects.get_or_create(factory_number=request.data['machine'])[0]
-
 
         maintenance = Complaint.objects.update_or_create(
             failure_description=failure_description,
@@ -197,7 +194,6 @@ def post_complaints_data(request):
                 'date_of_restoration': date_of_restoration,
                 'equipment_downtime': equipment_downtime,
                 'machine': machine})
-        print(maintenance)
     except Exception as e:
         print(e)
         result = f'Ошибка обновления данных рекламации, перепроверьте данные!'
@@ -220,29 +216,34 @@ def get_machine_list(request):
     transmission_model_filer = request.GET['transmission_model']
     driving_bridge_model_filer = request.GET['driving_bridge_model']
     controlled_bridge_model = request.GET['controlled_bridge_model']
-
-    machine_list = Machine.objects.all()
-
+    machine_list = Machine.objects.none()
+    if request.user.role == 'client':
+        machine_list = Machine.objects.filter(client__username=request.user)
+    if request.user.role == 'service_company':
+        machine_list = Machine.objects.filter(service_company__username=request.user)
+    if request.user.role == 'manager':
+        machine_list = Maintenance.objects.all()
+    machine_list_filter = machine_list
     if factory_number_filer != "":
-        machine_list = machine_list.filter(factory_number__contains=factory_number_filer)
+        machine_list_filter = machine_list.filter(factory_number__contains=factory_number_filer)
 
     if machine_model_filer != "Все модели":
-        machine_list = machine_list.filter(machine_model__name=machine_model_filer)
+        machine_list_filter = machine_list.filter(machine_model__name=machine_model_filer)
 
     if engine_model_filer != "Все модели":
-        machine_list = machine_list.filter(engine_model__name=engine_model_filer)
+        machine_list_filter = machine_list.filter(engine_model__name=engine_model_filer)
 
     if transmission_model_filer != "Все модели":
-        machine_list = machine_list.filter(transmission_model__name=transmission_model_filer)
+        machine_list_filter = machine_list.filter(transmission_model__name=transmission_model_filer)
 
     if driving_bridge_model_filer != "Все модели":
-        machine_list = machine_list.filter(driving_bridge_model__name=driving_bridge_model_filer)
+        machine_list_filter = machine_list.filter(driving_bridge_model__name=driving_bridge_model_filer)
 
     if controlled_bridge_model != "Все модели":
-        machine_list = machine_list.filter(controlled_bridge_model__name=controlled_bridge_model)
+        machine_list_filter = machine_list.filter(controlled_bridge_model__name=controlled_bridge_model)
 
     data = {
-        'machine_list_data': machine_list.order_by('-date_of_shipment').values(
+        'machine_list_data': machine_list_filter.order_by('-date_of_shipment').values(
             'id',
             'date_of_shipment',
             'factory_number',
@@ -281,14 +282,14 @@ def get_maintenance_unit(request):
     for maintenance_unit in maintenance:
         if maintenance_unit.machine.service_company == request.user or maintenance_unit.machine.client == request.user or request.user.role == 'manager':
             result = {
-                    'id': maintenance_unit.id,
-                    'type_of_maintenance': maintenance_unit.type_of_maintenance.name,
-                    'date_of_maintenance': maintenance_unit.date_of_maintenance.strftime("%d.%m.%Y"),
-                    'operating_time': maintenance_unit.operating_time,
-                    'order_number': maintenance_unit.order_number,
-                    'order_date': maintenance_unit.order_date.strftime("%d.%m.%Y"),
-                    'machine': maintenance_unit.machine.factory_number,
-                }
+                'id': maintenance_unit.id,
+                'type_of_maintenance': maintenance_unit.type_of_maintenance.name,
+                'date_of_maintenance': maintenance_unit.date_of_maintenance.strftime("%d.%m.%Y"),
+                'operating_time': maintenance_unit.operating_time,
+                'order_number': maintenance_unit.order_number,
+                'order_date': maintenance_unit.order_date.strftime("%d.%m.%Y"),
+                'machine': maintenance_unit.machine.factory_number,
+            }
 
         else:
             result = {
@@ -305,30 +306,22 @@ def get_maintenance_unit(request):
     return Response(status=status.HTTP_200_OK, data=result)
 
 
-
 @api_view(['GET'])
 def get_maintenance(request):
     if not request.user.is_authenticated:
         return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа'})
-    # print(request.user.username)
-    # if request.user.role != 'service_organisation' and request.user.role != 'manager':
-    #     return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа роли'})
-    # factory_number = request.GET['factory_number']
     type_of_maintenance = request.GET['type_of_maintenance']
     service_company = request.GET['service_company']
     machine = request.GET['machine']
     maintenances = Maintenance.objects.none()
-    # maintenances_filter = Maintenance.objects.none()
     if request.user.role == 'client':
-        print('client')
         maintenances = Maintenance.objects.filter(machine__client__username=request.user)
     if request.user.role == 'service_company':
         maintenances = Maintenance.objects.filter(machine__service_company__username=request.user)
-        print('service_company')
     if request.user.role == 'manager':
-        print(request.user)
         maintenances = Maintenance.objects.all()
     maintenances_filter = maintenances
+
     if type_of_maintenance != "Все модели":
         maintenances_filter = maintenances.filter(type_of_maintenance__name=type_of_maintenance)
 
@@ -337,14 +330,12 @@ def get_maintenance(request):
 
     if machine != "Все модели":
         maintenances_filter = maintenances.filter(machine__factory_number=machine)
-    print(maintenances)
-    # print(maintenances_filter)
 
     result = []
     for maintenance in maintenances:
         if maintenance.machine.service_company == request.user or maintenance.machine.client == request.user or request.user.role == 'manager':
             result = {
-                'maintenance_data':maintenances_filter.order_by('-date_of_maintenance').values(
+                'maintenance_data': maintenances_filter.order_by('-date_of_maintenance').values(
                     'id',
                     'type_of_maintenance__name',
                     'date_of_maintenance',
@@ -353,21 +344,12 @@ def get_maintenance(request):
                     "order_date",
                     "machine_id__factory_number"
                 ),
-                #     {
-                #     'id': maintenances.values('id'),
-                #     'type_of_maintenance': maintenances.values('type_of_maintenance'),
-                #     'date_of_maintenance': maintenances.values('date_of_maintenance'),
-                #     'operating_time': maintenance.operating_time,
-                #     'order_number': maintenance.order_number,
-                #     'order_date': maintenance.order_date.strftime("%d.%m.%Y"),
-                #     'machine': maintenance.machine.factory_number,
-                # },
-                'select_data':{
+                'select_data': {
                     'machine': Machine.objects.all().values('factory_number'),
                     'type_maintenance': TypeOfMaintenanceReference.objects.all().values('name')
 
                 },
-                'filter_data':{
+                'filter_data': {
                     'type_of_maintenance': maintenances.values('type_of_maintenance__name').distinct(),
                     'service_company': maintenances.values('machine__service_company__first_name').distinct(),
                     'machine': maintenances.values('machine__factory_number').distinct()
@@ -404,17 +386,17 @@ def get_complaints_unit(request):
     for complaint_unit in complaint:
         if complaint_unit.machine.service_company == request.user or complaint_unit.machine.client == request.user or request.user.role == 'manager':
             result = {
-                    'id': complaint_unit.id,
-                    'date_of_refusal': complaint_unit.date_of_refusal.strftime("%d.%m.%Y"),
-                    'operating_time': complaint_unit.operating_time,
-                    'failure_node': complaint_unit.failure_node.name,
-                    'failure_description': complaint_unit.failure_description,
-                    'recovery_method': complaint_unit.recovery_method.name,
-                    'parts_used': complaint_unit.parts_used,
-                    'date_of_restoration': complaint_unit.date_of_restoration.strftime("%d.%m.%Y"),
-                    'equipment_downtime': complaint_unit.equipment_downtime,
-                    'machine': complaint_unit.machine.factory_number,
-                }
+                'id': complaint_unit.id,
+                'date_of_refusal': complaint_unit.date_of_refusal.strftime("%d.%m.%Y"),
+                'operating_time': complaint_unit.operating_time,
+                'failure_node': complaint_unit.failure_node.name,
+                'failure_description': complaint_unit.failure_description,
+                'recovery_method': complaint_unit.recovery_method.name,
+                'parts_used': complaint_unit.parts_used,
+                'date_of_restoration': complaint_unit.date_of_restoration.strftime("%d.%m.%Y"),
+                'equipment_downtime': complaint_unit.equipment_downtime,
+                'machine': complaint_unit.machine.factory_number,
+            }
 
         else:
             result = {
@@ -427,33 +409,24 @@ def get_complaints_unit(request):
                 'machine': "Данные Вам недоступны",
 
             }
-            print(result)
 
     return Response(status=status.HTTP_200_OK, data=result)
-
 
 
 @api_view(['GET'])
 def get_complaints(request):
     if not request.user.is_authenticated:
         return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа'})
-    # if request.user.role != 'service_organisation' or request.user.role != 'manager':
-    #     Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа роли'})
-    # factory_number = request.GET['factory_number']
-
     service_company = request.GET['service_company']
     failure_node = request.GET['failure_node']
     recovery_method = request.GET['recovery_method']
     complaints = Complaint.objects.none()
 
     if request.user.role == 'client':
-        print('client')
         complaints = Complaint.objects.filter(machine__client__username=request.user)
     if request.user.role == 'service_company':
         complaints = Complaint.objects.filter(machine__service_company__username=request.user)
-        print('service_company')
     if request.user.role == 'manager':
-        print(request.user)
         complaints = Complaint.objects.all()
     complaints_filter = complaints
     if failure_node != "Все модели":
@@ -465,29 +438,28 @@ def get_complaints(request):
     if service_company != "Все модели":
         complaints_filter = complaints.filter(machine__service_company__first_name=service_company)
 
-    # complaints = Complaint.objects.filter(machine__factory_number=factory_number)
     result = {}
     for complaint in complaints:
         if complaint.machine.service_company == request.user or complaint.machine.client == request.user or request.user.role == 'manager':
 
             result = {
-                    "complaints_data":complaints_filter.order_by('-date_of_refusal').values(
-                        'id',
-                        'date_of_refusal',
-                        'operating_time',
-                        'failure_node_id__name',
-                        'failure_description',
-                        'recovery_method_id__name',
-                        'parts_used','date_of_restoration',
-                        'equipment_downtime',
-                        'machine_id__factory_number'
-                    ),
-                    'select_data': {
-                        'machine': Machine.objects.all().values('factory_number').distinct(),
-                        'failure_node': FailureNodeReference.objects.all().values('name'),
-                        'recovery_method': RecoveryMethodReference.objects.all().values('name')
-                    },
-                'filter_data':{
+                "complaints_data": complaints_filter.order_by('-date_of_refusal').values(
+                    'id',
+                    'date_of_refusal',
+                    'operating_time',
+                    'failure_node_id__name',
+                    'failure_description',
+                    'recovery_method_id__name',
+                    'parts_used', 'date_of_restoration',
+                    'equipment_downtime',
+                    'machine_id__factory_number'
+                ),
+                'select_data': {
+                    'machine': Machine.objects.all().values('factory_number').distinct(),
+                    'failure_node': FailureNodeReference.objects.all().values('name'),
+                    'recovery_method': RecoveryMethodReference.objects.all().values('name')
+                },
+                'filter_data': {
                     'failure_node': complaints.values('failure_node__name').distinct(),
                     'recovery_method': complaints.values('recovery_method__name').distinct(),
                     'service_company': complaints.values('machine__service_company__first_name').distinct()
@@ -513,5 +485,4 @@ def get_complaints(request):
                 }
 
             }
-            print(result)
     return Response(status=status.HTTP_200_OK, data=result)
