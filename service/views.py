@@ -222,7 +222,7 @@ def get_machine_list(request):
     if request.user.role == 'service_company':
         machine_list = Machine.objects.filter(service_company__username=request.user)
     if request.user.role == 'manager':
-        machine_list = Maintenance.objects.all()
+        machine_list = Machine.objects.all()
     machine_list_filter = machine_list
     if factory_number_filer != "":
         machine_list_filter = machine_list.filter(factory_number__contains=factory_number_filer)
