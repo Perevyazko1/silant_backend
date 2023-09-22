@@ -368,9 +368,9 @@ def get_maintenance(request):
 
                 },
                 'filter_data':{
-                    'type_of_maintenance': TypeOfMaintenanceReference.objects.all().values('name'),
-                    'service_company': CustomUser.objects.filter(role="service_organisation").values('first_name'),
-                    'machine': maintenances.values('machine__factory_number').distinct()
+                    'type_of_maintenance': maintenances_filter.values('type_of_maintenance__name').distinct(),
+                    'service_company': maintenances_filter.values('machine__service_company__first_name').distinct(),
+                    'machine': maintenances_filter.values('machine__factory_number').distinct()
                 }
             }
 
@@ -439,29 +439,59 @@ def get_complaints(request):
         return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа'})
     # if request.user.role != 'service_organisation' or request.user.role != 'manager':
     #     Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа роли'})
-    factory_number = request.GET['factory_number']
-    complaints = Complaint.objects.filter(machine__factory_number=factory_number)
+    # factory_number = request.GET['factory_number']
+
+    service_company = request.GET['service_company']
+    failure_node = request.GET['failure_node']
+    recovery_method = request.GET['recovery_method']
+    complaints = Complaint.objects.none()
+
+    if request.user.role == 'client':
+        print('client')
+        complaints = Complaint.objects.filter(machine__client__username=request.user)
+    if request.user.role == 'service_company':
+        complaints = Complaint.objects.filter(machine__service_company__username=request.user)
+        print('service_company')
+    if request.user.role == 'manager':
+        print(request.user)
+        complaints = Complaint.objects.all()
+    complaints_filter = complaints
+    if failure_node != "Все модели":
+        complaints_filter = complaints.filter(failure_node__name=failure_node)
+
+    if recovery_method != "Все модели":
+        complaints_filter = complaints.filter(recovery_method__name=recovery_method)
+
+    if service_company != "Все модели":
+        complaints_filter = complaints.filter(machine__service_company__first_name=service_company)
+
+    # complaints = Complaint.objects.filter(machine__factory_number=factory_number)
     result = {}
     for complaint in complaints:
         if complaint.machine.service_company == request.user or complaint.machine.client == request.user or request.user.role == 'manager':
 
             result = {
-                    "complaints_data":complaints.order_by('-date_of_refusal').values('id','date_of_refusal','operating_time','failure_node_id__name','failure_description','recovery_method_id__name','parts_used','date_of_restoration','equipment_downtime','machine_id__factory_number'),
-                    # 'id': complaint.id,
-                    # 'date_of_refusal': complaint.date_of_refusal.strftime("%d.%m.%Y"),
-                    # 'operating_time': complaint.operating_time,
-                    # 'failure_node': complaint.failure_node.name,
-                    # 'failure_description': complaint.failure_description,
-                    # 'recovery_method': complaint.recovery_method.name,
-                    # 'parts_used': complaint.parts_used,
-                    # 'date_of_restoration': complaint.date_of_restoration.strftime("%d.%m.%Y"),
-                    # 'equipment_downtime': complaint.equipment_downtime,
-                    # 'machine': complaint.machine.factory_number,
-                    'select_data':{
-                        'machine': Machine.objects.all().values('factory_number'),
+                    "complaints_data":complaints_filter.order_by('-date_of_refusal').values(
+                        'id',
+                        'date_of_refusal',
+                        'operating_time',
+                        'failure_node_id__name',
+                        'failure_description',
+                        'recovery_method_id__name',
+                        'parts_used','date_of_restoration',
+                        'equipment_downtime',
+                        'machine_id__factory_number'
+                    ),
+                    'select_data': {
+                        'machine': Machine.objects.all().values('factory_number').distinct(),
                         'failure_node': FailureNodeReference.objects.all().values('name'),
                         'recovery_method': RecoveryMethodReference.objects.all().values('name')
-                    }
+                    },
+                'filter_data':{
+                    'failure_node': complaints_filter.values('failure_node__name').distinct(),
+                    'recovery_method': complaints_filter.values('recovery_method__name').distinct(),
+                    'service_company': complaints_filter.values('machine__service_company__first_name').distinct()
+                }
 
             }
         else:
