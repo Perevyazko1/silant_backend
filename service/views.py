@@ -19,6 +19,16 @@ def get_machine_data(request):
         return Response(status=status.HTTP_200_OK)
 
     result = {
+        'users_data': CustomUser.objects.filter(role="client").values('first_name'),
+        'services_data': CustomUser.objects.filter(role="service_organisation").values('first_name'),
+        'filter_data': {
+            'machine_models': MachineModelReference.objects.all().values('name'),
+            'engine_models': EngineModelReference.objects.all().values('name'),
+            'transmission_models': TransmissionModelReference.objects.all().values('name'),
+            'driving_bridge_models': DrivingBridgeModelReference.objects.all().values('name'),
+            'controlled_bridge_models': ControlledBridgeModelReference.objects.all().values('name'),
+        },
+
         'factory_number': factory_number,
         'machine_model': machine.machine_model.name,
         'engine_model': machine.engine_model.name,
