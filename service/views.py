@@ -148,7 +148,7 @@ def post_maintenance_data(request):
         return Response(status=status.HTTP_200_OK, data={'result': 'Ошибка доступа'})
     try:
         type_of_maintenance = \
-        TypeOfMaintenanceReference.objects.get_or_create(name=request.data['type_of_maintenance'])[0]
+            TypeOfMaintenanceReference.objects.get_or_create(name=request.data['type_of_maintenance'])[0]
         date_of_maintenance = datetime.datetime.strptime(request.data['date_of_maintenance'], "%d.%m.%Y")
         operating_time = request.data['operating_time']
         order_number = request.data['order_number']
@@ -185,31 +185,47 @@ def post_complaints_data(request):
     try:
         date_of_refusal = datetime.datetime.strptime(request.data['date_of_refusal'], "%d.%m.%Y")
         operating_time = request.data['operating_time']
-        failure_node = FailureNodeReference.objects.get_or_create(name=request.data['failure_node'])[0]
         failure_description = request.data['failure_description']
+        failure_node = FailureNodeReference.objects.get_or_create(name=request.data['failure_node'])[0]
+        id = request.data['id']
         recovery_method = RecoveryMethodReference.objects.get_or_create(name=request.data['recovery_method'])[0]
         parts_used = request.data['parts_used']
         date_of_restoration = datetime.datetime.strptime(request.data['date_of_restoration'], "%d.%m.%Y")
         equipment_downtime = request.data['equipment_downtime']
         machine = Machine.objects.get_or_create(factory_number=request.data['machine'])[0]
+        if not isinstance(id, int):
 
-        maintenance = Complaint.objects.update_or_create(
-            failure_description=failure_description,
-            defaults={
-                'date_of_refusal': date_of_refusal,
-                'operating_time': operating_time,
-                'failure_node': failure_node,
-                'recovery_method': recovery_method,
-                'parts_used': parts_used,
-                'date_of_restoration': date_of_restoration,
-                'equipment_downtime': equipment_downtime,
-                'machine': machine})
+            complaint = Complaint.objects.create(
+                failure_description=failure_description,
+                date_of_refusal=date_of_refusal,
+                operating_time=operating_time,
+                failure_node=failure_node,
+                recovery_method=recovery_method,
+                parts_used=parts_used,
+                date_of_restoration=date_of_restoration,
+                equipment_downtime=equipment_downtime,
+                machine=machine
+            )
+        else:
+            complaint = Complaint.objects.update_or_create(
+                id=id,
+                defaults={
+                    'failure_description': failure_description,
+                    'date_of_refusal': date_of_refusal,
+                    'operating_time': operating_time,
+                    'failure_node': failure_node,
+                    'recovery_method': recovery_method,
+                    'parts_used': parts_used,
+                    'date_of_restoration': date_of_restoration,
+                    'equipment_downtime': equipment_downtime,
+                    'machine': machine
+                })
     except Exception as e:
         print(e)
         result = f'Ошибка обновления данных рекламации, перепроверьте данные!'
         return Response(status=status.HTTP_200_OK, data={'result': result})
 
-    if maintenance[1]:
+    if complaint:
         result = f'Успешно создано новая рекламация {failure_description}!'
     else:
         result = f'Успешно обновлена рекламация {failure_description}!'
