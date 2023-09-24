@@ -268,7 +268,7 @@ def get_machine_list(request):
         machine_list_filter = machine_list.filter(controlled_bridge_model__name=controlled_bridge_model)
 
     data = {
-        'machine_list_data': machine_list_filter.order_by('-date_of_shipment').values(
+        'machine_list_data': machine_list_filter.order_by('date_of_shipment').values(
             'id',
             'date_of_shipment',
             'factory_number',
@@ -360,7 +360,7 @@ def get_maintenance(request):
     for maintenance in maintenances:
         if maintenance.machine.service_company == request.user or maintenance.machine.client == request.user or request.user.role == 'manager':
             result = {
-                'maintenance_data': maintenances_filter.order_by('-date_of_maintenance').values(
+                'maintenance_data': maintenances_filter.order_by('date_of_maintenance').values(
                     'id',
                     'type_of_maintenance__name',
                     'date_of_maintenance',
@@ -468,7 +468,7 @@ def get_complaints(request):
         if complaint.machine.service_company == request.user or complaint.machine.client == request.user or request.user.role == 'manager':
 
             result = {
-                "complaints_data": complaints_filter.order_by('-date_of_refusal').values(
+                "complaints_data": complaints_filter.order_by('date_of_refusal').values(
                     'id',
                     'date_of_refusal',
                     'operating_time',
