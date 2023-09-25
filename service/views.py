@@ -284,11 +284,11 @@ def get_machine_list(request):
 
         ),
         'filter_data': {
-            'machine_models': machine_list.values('machine_model__name'),
-            'engine_models': machine_list.values('engine_model__name'),
-            'transmission_models': machine_list.values('transmission_model__name'),
-            'driving_bridge_models': machine_list.values('driving_bridge_model__name'),
-            'controlled_bridge_models': machine_list.values('controlled_bridge_model__name'),
+            'machine_models': machine_list.values('machine_model__name').distinct(),
+            'engine_models': machine_list.values('engine_model__name').distinct(),
+            'transmission_models': machine_list.values('transmission_model__name').distinct(),
+            'driving_bridge_models': machine_list.values('driving_bridge_model__name').distinct(),
+            'controlled_bridge_models': machine_list.values('controlled_bridge_model__name').distinct(),
         },
         'users_data': CustomUser.objects.filter(role="client").values('first_name'),
         'services_data': CustomUser.objects.filter(role="service_organisation").values('first_name'),
@@ -339,12 +339,16 @@ def get_maintenance(request):
     service_company = request.GET['service_company']
     machine = request.GET['machine']
     maintenances = Maintenance.objects.none()
+    machines = Machine.objects.none()
     if request.user.role == 'client':
         maintenances = Maintenance.objects.filter(machine__client__username=request.user)
+        machines = Machine.objects.filter(client__username=request.user).values('factory_number')
     if request.user.role == 'service_organisation':
+        machines = Machine.objects.filter(service_company__username=request.user).values('factory_number')
         maintenances = Maintenance.objects.filter(machine__service_company__username=request.user)
     if request.user.role == 'manager':
         maintenances = Maintenance.objects.all()
+        machines = Machine.objects.all().values('factory_number')
     maintenances_filter = maintenances
 
     if type_of_maintenance != "Все модели":
@@ -377,10 +381,9 @@ def get_maintenance(request):
                 'filter_data': {
                     'type_of_maintenance': maintenances.values('type_of_maintenance__name').distinct(),
                     'service_company': maintenances.values('machine__service_company__first_name').distinct(),
-                    'machine': maintenances.values('machine__factory_number').distinct()
+                    'machine': machines
                 }
             }
-
         else:
             result = {
                 'id': "Данные Вам недоступны",
@@ -448,10 +451,13 @@ def get_complaints(request):
     complaints = Complaint.objects.none()
 
     if request.user.role == 'client':
+        machines = Machine.objects.filter(client__username=request.user).values('factory_number')
         complaints = Complaint.objects.filter(machine__client__username=request.user)
     if request.user.role == 'service_organisation':
+        machines = Machine.objects.filter(service_company__username=request.user).values('factory_number')
         complaints = Complaint.objects.filter(machine__service_company__username=request.user)
     if request.user.role == 'manager':
+        machines = Machine.objects.all().values('factory_number')
         complaints = Complaint.objects.all()
     complaints_filter = complaints
     if failure_node != "Все модели":
@@ -487,7 +493,8 @@ def get_complaints(request):
                 'filter_data': {
                     'failure_node': complaints.values('failure_node__name').distinct(),
                     'recovery_method': complaints.values('recovery_method__name').distinct(),
-                    'service_company': complaints.values('machine__service_company__first_name').distinct()
+                    'service_company': complaints.values('machine__service_company__first_name').distinct(),
+                    'machine': machines
                 }
 
             }
